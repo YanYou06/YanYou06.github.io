@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>上传助手 | YanYou06</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="site-wrap">
+    <header class="nav">
+      <a class="brand" href="index.html">YanYou06.home</a>
+      <nav id="site-nav" class="nav-links"></nav>
+    </header>
+
+    <section class="panel">
+      <h2>上传与维护助手</h2>
+      <p class="muted">支持高自由度维护：上传任意文章/笔记/图片后，复制下面自动生成的 JSON 条目，贴到对应 data/*.json 即可生效。</p>
+      <ol>
+        <li>文章页：放到 <code>posts/</code> 或 <code>notes/</code></li>
+        <li>课程 PDF：放到 <code>assets/docs/</code></li>
+        <li>相册图片：放到 <code>assets/images/</code></li>
+      </ol>
+
+      <div class="upload-box">
+        <label for="upload-section">选择分区：</label>
+        <select id="upload-section">
+          <option value="about">简介</option>
+          <option value="courses">学习课程</option>
+          <option value="essays">杂谈</option>
+          <option value="jottings">随记</option>
+          <option value="life">生活碎片</option>
+        </select>
+        <p>
+          <input id="upload-input" type="file" multiple />
+        </p>
+        <p class="muted">选择本地文件后会生成可直接粘贴的 JSON 片段：</p>
+        <textarea id="upload-output" placeholder="这里会显示生成的 JSON 条目"></textarea>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

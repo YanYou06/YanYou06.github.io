@@ -1,0 +1,36 @@
+{
+  "title": "学习课程",
+  "description": "按课程分类展示笔记：支持 LaTeX 页面与 PDF 跳转。",
+  "categories": [
+    {
+      "name": "高等数学与线性代数",
+      "description": "基础理论与推导记录。",
+      "items": [
+        {
+          "title": "线性代数：特征值笔记（LaTeX 页面）",
+          "summary": "包含矩阵特征分解的公式推导。",
+          "type": "LaTeX",
+          "href": "notes/linear-algebra.html"
+        },
+        {
+          "title": "线代速查 PDF",
+          "summary": "可替换为你自己的课程 PDF。",
+          "type": "PDF",
+          "href": "assets/docs/linear-algebra-summary.pdf"
+        }
+      ]
+    },
+    {
+      "name": "计算机课程",
+      "description": "系统、网络、编程实践。",
+      "items": [
+        {
+          "title": "学习计划：系统与网络",
+          "summary": "阶段目标与实践项目清单。",
+          "type": "文章",
+          "href": "posts/system-network-plan.html"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "title": "生活碎片",
+  "description": "相册模式：一张图 + 一句话。",
+  "items": [
+    {
+      "title": "江边晚风",
+      "image": "assets/images/street-night.svg",
+      "caption": "骑车经过江边，风很凉，脑子也更清醒。"
+    },
+    {
+      "title": "咖啡店周末",
+      "image": "assets/images/coffee-code.svg",
+      "caption": "带着耳机写了两小时代码，效率 surprisingly 高。"
+    },
+    {
+      "title": "慢跑打卡",
+      "image": "assets/images/sunset-run.svg",
+      "caption": "晚霞很美，跑完心情也被重置了。"
+    }
+  ]
+}

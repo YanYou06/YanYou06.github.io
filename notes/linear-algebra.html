@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>线性代数：特征值笔记</title>
+  <link rel="stylesheet" href="../styles.css"/>
+</head>
+<body>
+  <div class="site-wrap">
+    <header class="nav">
+      <a class="brand" href="../index.html">YanYou06.home</a>
+      <nav id="site-nav" class="nav-links"></nav>
+    </header>
+    <article class="panel">
+      <h2>线性代数：特征值笔记（LaTeX 排版）</h2>
+      <p>若矩阵 \(A\in\mathbb{R}^{n\times n}\)，当存在非零向量 \(v\) 与标量 \(\lambda\) 满足：</p>
+      <p>\[
+        Av=\lambda v
+      \]</p>
+      <p>则 \(\lambda\) 是特征值，\(v\) 是对应特征向量。特征方程：</p>
+      <p>\[
+        \det(A-\lambda I)=0
+      \]</p>
+      <p>可对角化条件之一：存在可逆矩阵 \(P\) 使得 \(A=P\Lambda P^{-1}\)。</p>
+      <p><a class="button" href="../assets/docs/linear-algebra-summary.pdf" target="_blank" rel="noopener noreferrer">打开配套 PDF</a></p>
+    </article>
+  </div>
+  <script src="../app.js"></script>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] } };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</body>
+</html>
