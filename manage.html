@@ -13,16 +13,20 @@
       <nav id="site-nav" class="nav-links"></nav>
     </header>
 
-    <section class="panel">
+    <section class="panel" id="manage-root">
       <h2>上传与维护助手</h2>
-      <p class="muted">支持高自由度维护：上传任意文章/笔记/图片后，复制下面自动生成的 JSON 条目，贴到对应 data/*.json 即可生效。</p>
-      <ol>
-        <li>文章页：放到 <code>posts/</code> 或 <code>notes/</code></li>
-        <li>课程 PDF：放到 <code>assets/docs/</code></li>
-        <li>相册图片：放到 <code>assets/images/</code></li>
-      </ol>
+      <p class="muted">Markdown 直接写入，点“更新内容”即可刷新网页内容。</p>
 
-      <div class="upload-box">
+      <div id="owner-lock" class="upload-box">
+        <p class="muted">仅站长可更新内容，请输入站长口令。</p>
+        <input id="owner-passcode" type="password" placeholder="站长口令" />
+        <p>
+          <button id="owner-unlock" type="button">解锁更新</button>
+        </p>
+        <p id="owner-lock-msg" class="muted"></p>
+      </div>
+
+      <div id="owner-editor" class="upload-box hidden">
         <label for="upload-section">选择分区：</label>
         <select id="upload-section">
           <option value="about">简介</option>
@@ -31,11 +35,27 @@
           <option value="jottings">随记</option>
           <option value="life">生活碎片</option>
         </select>
+
+        <div id="docs-form">
+          <p><input id="entry-title" type="text" placeholder="标题" /></p>
+          <p><textarea id="entry-markdown" placeholder="直接输入 Markdown 内容"></textarea></p>
+          <p class="muted">或直接上传 Markdown 文件（.md）：</p>
+          <p><input id="markdown-files" type="file" accept=".md,text/markdown" multiple /></p>
+        </div>
+
+        <div id="life-form" class="hidden">
+          <p><input id="life-title" type="text" placeholder="图片标题" /></p>
+          <p><textarea id="life-markdown" placeholder="图片说明（支持 Markdown）"></textarea></p>
+          <p><input id="life-image" type="file" accept="image/*" /></p>
+        </div>
+
         <p>
-          <input id="upload-input" type="file" multiple />
+          <button id="add-entry" type="button">加入待更新列表</button>
+          <button id="apply-update" type="button">更新内容</button>
+          <button id="clear-section" type="button">清空当前分区</button>
         </p>
-        <p class="muted">选择本地文件后会生成可直接粘贴的 JSON 片段：</p>
-        <textarea id="upload-output" placeholder="这里会显示生成的 JSON 条目"></textarea>
+        <p id="manage-msg" class="muted"></p>
+        <textarea id="pending-preview" placeholder="这里会显示待更新条目预览" readonly></textarea>
       </div>
     </section>
   </div>

@@ -1,30 +1,5 @@
 {
   "title": "简介",
-  "description": "关于我、近期计划和联系方式入口。",
-  "categories": [
-    {
-      "name": "基础信息",
-      "description": "主页主人档案。",
-      "items": [
-        {
-          "title": "关于这个网站",
-          "summary": "使用分区化结构，后续内容可随时扩展。",
-          "type": "说明",
-          "href": "posts/about-site.html"
-        }
-      ]
-    },
-    {
-      "name": "在学方向",
-      "description": "我正在持续学习的主题。",
-      "items": [
-        {
-          "title": "学习路线总览",
-          "summary": "数学基础、编程实践、系统设计。",
-          "type": "路线图",
-          "href": "posts/study-roadmap.html"
-        }
-      ]
-    }
-  ]
+  "description": "等待你上传 Markdown 内容。",
+  "categories": []
 }

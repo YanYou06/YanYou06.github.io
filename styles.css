@@ -195,6 +195,35 @@ figcaption {
   margin-top: 14px;
 }
 
+.hidden {
+  display: none !important;
+}
+
+input,
+select,
+button,
+textarea {
+  font: inherit;
+}
+
+input,
+select,
+button {
+  background: #0a1222;
+  color: #e9f8ff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+button {
+  cursor: pointer;
+}
+
+.markdown-body p {
+  margin: 8px 0;
+}
+
 textarea {
   width: 100%;
   min-height: 180px;

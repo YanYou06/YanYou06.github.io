@@ -1,18 +1,5 @@
 {
   "title": "随记",
-  "description": "短记录、灵感草稿与进度日志。",
-  "categories": [
-    {
-      "name": "临时想法",
-      "description": "快速记录后续可扩展为长文。",
-      "items": [
-        {
-          "title": "2026-09：近期目标速记",
-          "summary": "本月想完成的几件小事。",
-          "type": "短记",
-          "href": "notes/jot-2026-09.html"
-        }
-      ]
-    }
-  ]
+  "description": "等待你上传 Markdown 内容。",
+  "categories": []
 }

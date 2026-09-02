@@ -27,7 +27,7 @@
     },
     {
       "name": "上传助手",
-      "summary": "快速生成 JSON 条目，维护内容更自由。",
+      "summary": "站长专用：直接更新 Markdown 与生活碎片。",
       "path": "manage.html"
     }
   ]
