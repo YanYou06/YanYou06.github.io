@@ -1,0 +1,18 @@
+{
+  "title": "杂谈",
+  "description": "偏长文、观点类与复盘内容。",
+  "categories": [
+    {
+      "name": "技术思考",
+      "description": "技术与学习方法。",
+      "items": [
+        {
+          "title": "从输入到输出：我的学习闭环",
+          "summary": "关于如何把课程内容变成长期能力。",
+          "type": "文章",
+          "href": "posts/essay-learning-loop.html"
+        }
+      ]
+    }
+  ]
+}
