@@ -1,6 +1,8 @@
 const OWNER_PASSCODE = 'YanYou06-owner-only';
 const OWNER_STATE_KEY = 'yy06-owner-unlocked';
-const CONTENT_KEY = 'yy06-content-v1';
+const OWNER_TOKEN_KEY = 'yy06-github-token';
+const REPO_OWNER = 'YanYou06';
+const REPO_NAME = 'YanYou06.github.io';
 
 const baseSections = [
   { title: '简介', path: 'about.html' },
@@ -19,29 +21,16 @@ const sectionSchema = {
   life: { title: '生活碎片', description: '等待你上传图片与 Markdown 说明。', items: [] },
 };
 
-const sourceMap = {
-  'data/about.json': 'about',
-  'data/courses.json': 'courses',
-  'data/essays.json': 'essays',
-  'data/jottings.json': 'jottings',
-  'data/life.json': 'life',
+const sectionToPath = {
+  about: 'data/about.json',
+  courses: 'data/courses.json',
+  essays: 'data/essays.json',
+  jottings: 'data/jottings.json',
+  life: 'data/life.json',
 };
 
 function getOwnerMode() {
   return localStorage.getItem(OWNER_STATE_KEY) === '1';
-}
-
-function getStoredContent() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(CONTENT_KEY) || '{}');
-    return typeof parsed === 'object' && parsed ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function setStoredContent(data) {
-  localStorage.setItem(CONTENT_KEY, JSON.stringify(data));
 }
 
 const navEl = document.getElementById('site-nav');
@@ -59,7 +48,7 @@ if (manageEntry && getOwnerMode()) {
 }
 
 async function fetchJSON(path) {
-  const response = await fetch(path);
+  const response = await fetch(path, { cache: 'no-store' });
   if (!response.ok) {
     throw new Error(`${path} 加载失败：${response.status}`);
   }
@@ -94,13 +83,6 @@ function markdownToHtml(markdown) {
   return `<div class="markdown-body">${blocks}</div>`;
 }
 
-async function loadSectionData(source) {
-  const key = sourceMap[source];
-  const stored = getStoredContent();
-  if (key && stored[key]) return stored[key];
-  return fetchJSON(source);
-}
-
 async function renderHome() {
   const root = document.getElementById('home-sections');
   if (!root) return;
@@ -129,7 +111,7 @@ async function renderDocPage() {
   if (!root || root.dataset.mode !== 'docs') return;
 
   try {
-    const data = await loadSectionData(root.dataset.source);
+    const data = await fetchJSON(root.dataset.source);
     const categories = (data.categories || [])
       .map(
         (cat) => `
@@ -167,7 +149,7 @@ async function renderGalleryPage() {
   if (!root || root.dataset.mode !== 'gallery') return;
 
   try {
-    const data = await loadSectionData(root.dataset.source);
+    const data = await fetchJSON(root.dataset.source);
     const items = data.items || [];
     const isOwner = getOwnerMode();
     root.innerHTML = `
@@ -195,11 +177,63 @@ async function renderGalleryPage() {
   }
 }
 
-function defaultSectionData(sectionKey) {
+function cloneDefaultSection(sectionKey) {
   return JSON.parse(JSON.stringify(sectionSchema[sectionKey]));
 }
 
-function renderUploadAssistant() {
+async function githubRequest(path, token, options = {}) {
+  const response = await fetch(`https://api.github.com${path}`, {
+    ...options,
+    headers: {
+      Accept: 'application/vnd.github+json',
+      Authorization: `token ${token}`,
+      'X-GitHub-Api-Version': '2022-11-28',
+      ...(options.headers || {}),
+    },
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`GitHub API 错误 ${response.status}: ${detail.slice(0, 180)}`);
+  }
+  return response.status === 204 ? null : response.json();
+}
+
+async function getContentMeta(path, token) {
+  return githubRequest(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, token);
+}
+
+async function putFile(path, rawContent, token, message) {
+  let sha;
+  try {
+    const meta = await getContentMeta(path, token);
+    sha = meta.sha;
+  } catch {}
+  const body = {
+    message,
+    content: btoa(unescape(encodeURIComponent(rawContent))),
+  };
+  if (sha) body.sha = sha;
+  return githubRequest(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, token, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
+async function putBinaryFile(path, base64Content, token, message) {
+  let sha;
+  try {
+    const meta = await getContentMeta(path, token);
+    sha = meta.sha;
+  } catch {}
+  const body = { message, content: base64Content };
+  if (sha) body.sha = sha;
+  return githubRequest(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, token, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
+async function renderUploadAssistant() {
   const sectionSelect = document.getElementById('upload-section');
   if (!sectionSelect) return;
 
@@ -208,6 +242,7 @@ function renderUploadAssistant() {
   const unlockButton = document.getElementById('owner-unlock');
   const lockMsg = document.getElementById('owner-lock-msg');
   const editor = document.getElementById('owner-editor');
+  const tokenInput = document.getElementById('github-token');
 
   const docsForm = document.getElementById('docs-form');
   const lifeForm = document.getElementById('life-form');
@@ -222,20 +257,83 @@ function renderUploadAssistant() {
   const clearButton = document.getElementById('clear-section');
   const pendingPreview = document.getElementById('pending-preview');
   const manageMsg = document.getElementById('manage-msg');
+  const currentItems = document.getElementById('current-items');
 
   if (
-    !lockBox || !ownerPasscode || !unlockButton || !lockMsg || !editor || !docsForm || !lifeForm ||
-    !titleInput || !markdownInput || !markdownFiles || !lifeTitle || !lifeMarkdown || !lifeImage ||
-    !addEntryButton || !applyButton || !clearButton || !pendingPreview || !manageMsg
+    !lockBox || !ownerPasscode || !unlockButton || !lockMsg || !editor || !tokenInput || !docsForm ||
+    !lifeForm || !titleInput || !markdownInput || !markdownFiles || !lifeTitle || !lifeMarkdown ||
+    !lifeImage || !addEntryButton || !applyButton || !clearButton || !pendingPreview || !manageMsg || !currentItems
   ) return;
 
   const pending = { about: [], courses: [], essays: [], jottings: [], life: [] };
+  const loaded = {};
+
+  function getToken() {
+    return tokenInput.value.trim();
+  }
+
+  function updatePreview() {
+    pendingPreview.value = JSON.stringify(pending[sectionSelect.value], null, 2);
+  }
+
+  function renderCurrentList() {
+    const key = sectionSelect.value;
+    const data = loaded[key] || cloneDefaultSection(key);
+    const items = key === 'life'
+      ? (data.items || []).map((item, index) => ({ title: item.title || `生活碎片 ${index + 1}`, index }))
+      : (data.categories || []).flatMap((cat) => (cat.items || []).map((item, index) => ({ title: item.title || `条目 ${index + 1}`, categoryName: cat.name || '未分类', index })));
+
+    if (!items.length) {
+      currentItems.innerHTML = '<p class="muted">当前分区没有已发布内容。</p>';
+      return;
+    }
+
+    currentItems.innerHTML = `
+      <p class="muted">当前已发布内容（可删除）：</p>
+      ${items
+        .map((item) => `
+          <div class="item">
+            <span>${escapeHtml(item.categoryName ? `[${item.categoryName}] ${item.title}` : item.title)}</span>
+            <button type="button" data-delete-index="${item.index}">删除</button>
+          </div>`)
+        .join('')}
+    `;
+
+    currentItems.querySelectorAll('button[data-delete-index]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const deleteIndex = Number(button.dataset.deleteIndex);
+        if (Number.isNaN(deleteIndex)) return;
+        if (key === 'life') {
+          loaded[key].items.splice(deleteIndex, 1);
+        } else {
+          const itemsRef = loaded[key].categories?.[0]?.items || [];
+          itemsRef.splice(deleteIndex, 1);
+          loaded[key].categories = [{ ...(loaded[key].categories?.[0] || { name: '最新内容', description: '由上传助手自动更新。' }), items: itemsRef }];
+        }
+        renderCurrentList();
+        manageMsg.textContent = '已从当前分区删除该内容，点击“更新内容”后会发布。';
+      });
+    });
+  }
+
+  async function loadSection(sectionKey) {
+    const filePath = sectionToPath[sectionKey];
+    loaded[sectionKey] = await fetchJSON(`${filePath}?t=${Date.now()}`);
+    if (sectionKey !== 'life') {
+      const first = loaded[sectionKey].categories?.[0];
+      if (!first) {
+        loaded[sectionKey].categories = [{ name: '最新内容', description: '由上传助手自动更新。', items: [] }];
+      }
+    }
+    renderCurrentList();
+  }
 
   function refreshMode() {
     const isLife = sectionSelect.value === 'life';
     docsForm.classList.toggle('hidden', isLife);
     lifeForm.classList.toggle('hidden', !isLife);
-    pendingPreview.value = JSON.stringify(pending[sectionSelect.value], null, 2);
+    updatePreview();
+    if (loaded[sectionSelect.value]) renderCurrentList();
   }
 
   function unlockOwner() {
@@ -246,23 +344,40 @@ function renderUploadAssistant() {
     localStorage.setItem(OWNER_STATE_KEY, '1');
     lockBox.classList.add('hidden');
     editor.classList.remove('hidden');
+    tokenInput.value = localStorage.getItem(OWNER_TOKEN_KEY) || '';
     manageMsg.textContent = '已解锁，可更新内容。';
+    loadSection(sectionSelect.value).catch((error) => {
+      manageMsg.textContent = `加载分区失败：${error.message}`;
+    });
   }
 
   if (getOwnerMode()) {
     lockBox.classList.add('hidden');
     editor.classList.remove('hidden');
+    tokenInput.value = localStorage.getItem(OWNER_TOKEN_KEY) || '';
+    await loadSection(sectionSelect.value).catch(() => {
+      currentItems.innerHTML = '<p class="muted">分区内容加载失败。</p>';
+    });
   } else {
     lockBox.classList.remove('hidden');
     editor.classList.add('hidden');
   }
+
+  tokenInput.addEventListener('change', () => {
+    localStorage.setItem(OWNER_TOKEN_KEY, tokenInput.value.trim());
+  });
 
   unlockButton.addEventListener('click', unlockOwner);
   ownerPasscode.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') unlockOwner();
   });
 
-  sectionSelect.addEventListener('change', refreshMode);
+  sectionSelect.addEventListener('change', () => {
+    refreshMode();
+    loadSection(sectionSelect.value).catch((error) => {
+      manageMsg.textContent = `加载分区失败：${error.message}`;
+    });
+  });
   refreshMode();
 
   markdownFiles.addEventListener('change', async (event) => {
@@ -279,7 +394,7 @@ function renderUploadAssistant() {
       })
     );
     pending[sectionKey].push(...contents);
-    pendingPreview.value = JSON.stringify(pending[sectionKey], null, 2);
+    updatePreview();
     manageMsg.textContent = `已加入 ${contents.length} 个 Markdown 文件。`;
     markdownFiles.value = '';
   });
@@ -292,20 +407,16 @@ function renderUploadAssistant() {
         manageMsg.textContent = '请先选择图片。';
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        pending.life.push({
-          title: lifeTitle.value.trim() || file.name,
-          image: String(reader.result || ''),
-          caption: lifeMarkdown.value.trim(),
-        });
-        pendingPreview.value = JSON.stringify(pending.life, null, 2);
-        manageMsg.textContent = '已加入一条生活碎片。';
-        lifeTitle.value = '';
-        lifeMarkdown.value = '';
-        lifeImage.value = '';
-      };
-      reader.readAsDataURL(file);
+      pending.life.push({
+        title: lifeTitle.value.trim() || file.name,
+        caption: lifeMarkdown.value.trim(),
+        imageFile: file,
+      });
+      updatePreview();
+      manageMsg.textContent = '已加入一条生活碎片。';
+      lifeTitle.value = '';
+      lifeMarkdown.value = '';
+      lifeImage.value = '';
       return;
     }
 
@@ -316,44 +427,89 @@ function renderUploadAssistant() {
       return;
     }
     pending[sectionKey].push({ title, markdown });
-    pendingPreview.value = JSON.stringify(pending[sectionKey], null, 2);
+    updatePreview();
     manageMsg.textContent = '已加入一条 Markdown 内容。';
     titleInput.value = '';
     markdownInput.value = '';
   });
 
-  applyButton.addEventListener('click', () => {
+  applyButton.addEventListener('click', async () => {
     const sectionKey = sectionSelect.value;
-    if (!pending[sectionKey].length) {
-      manageMsg.textContent = '待更新列表为空。';
+    const token = getToken();
+    if (!token) {
+      manageMsg.textContent = '请先输入 GitHub Token。';
       return;
     }
-    const stored = getStoredContent();
-    const sectionData = defaultSectionData(sectionKey);
-    if (sectionKey === 'life') {
-      sectionData.items = pending.life.slice();
-    } else {
-      sectionData.categories = [
-        {
-          name: '最新内容',
-          description: '由上传助手自动更新。',
-          items: pending[sectionKey].map((item) => ({ title: item.title, markdown: item.markdown })),
-        },
-      ];
+
+    try {
+      const sectionData = loaded[sectionKey] || cloneDefaultSection(sectionKey);
+      if (sectionKey === 'life') {
+        for (const lifeItem of pending.life) {
+          const arrayBuffer = await lifeItem.imageFile.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          let binary = '';
+          bytes.forEach((value) => {
+            binary += String.fromCharCode(value);
+          });
+          const base64Image = btoa(binary);
+          const filename = `${Date.now()}-${lifeItem.imageFile.name.replace(/\s+/g, '-')}`;
+          const imagePath = `assets/images/${filename}`;
+          await putBinaryFile(imagePath, base64Image, token, `feat: add life image ${filename}`);
+          sectionData.items = sectionData.items || [];
+          sectionData.items.push({
+            title: lifeItem.title,
+            image: imagePath,
+            caption: lifeItem.caption,
+          });
+        }
+      } else {
+        sectionData.categories = sectionData.categories || [{ name: '最新内容', description: '由上传助手自动更新。', items: [] }];
+        sectionData.categories[0].name = sectionData.categories[0].name || '最新内容';
+        sectionData.categories[0].description = sectionData.categories[0].description || '由上传助手自动更新。';
+        sectionData.categories[0].items = sectionData.categories[0].items || [];
+        sectionData.categories[0].items.push(...pending[sectionKey].map((item) => ({ title: item.title, markdown: item.markdown })));
+      }
+
+      await putFile(
+        sectionToPath[sectionKey],
+        `${JSON.stringify(sectionData, null, 2)}\n`,
+        token,
+        `feat: update ${sectionKey} content`
+      );
+
+      loaded[sectionKey] = sectionData;
+      pending[sectionKey] = [];
+      updatePreview();
+      renderCurrentList();
+      manageMsg.textContent = '更新已提交到仓库，网站会在 Pages 构建完成后公开可见。';
+    } catch (error) {
+      manageMsg.textContent = `更新失败：${error.message}`;
     }
-    stored[sectionKey] = sectionData;
-    setStoredContent(stored);
-    manageMsg.textContent = '更新完成，返回分区页即可看到最新内容。';
   });
 
-  clearButton.addEventListener('click', () => {
+  clearButton.addEventListener('click', async () => {
     const sectionKey = sectionSelect.value;
-    const stored = getStoredContent();
-    stored[sectionKey] = defaultSectionData(sectionKey);
-    setStoredContent(stored);
-    pending[sectionKey] = [];
-    pendingPreview.value = '[]';
-    manageMsg.textContent = '当前分区已清空。';
+    const token = getToken();
+    if (!token) {
+      manageMsg.textContent = '请先输入 GitHub Token。';
+      return;
+    }
+    try {
+      const cleared = cloneDefaultSection(sectionKey);
+      await putFile(
+        sectionToPath[sectionKey],
+        `${JSON.stringify(cleared, null, 2)}\n`,
+        token,
+        `feat: clear ${sectionKey} content`
+      );
+      loaded[sectionKey] = cleared;
+      pending[sectionKey] = [];
+      updatePreview();
+      renderCurrentList();
+      manageMsg.textContent = '已清空并提交，网站将同步为公开最新内容。';
+    } catch (error) {
+      manageMsg.textContent = `清空失败：${error.message}`;
+    }
   });
 }
 

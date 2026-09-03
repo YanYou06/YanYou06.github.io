@@ -15,7 +15,7 @@
 
     <section class="panel" id="manage-root">
       <h2>上传与维护助手</h2>
-      <p class="muted">Markdown 直接写入，点“更新内容”即可刷新网页内容。</p>
+      <p class="muted">Markdown 直接写入仓库，点“更新内容”后网站会公开同步。</p>
 
       <div id="owner-lock" class="upload-box">
         <p class="muted">仅站长可更新内容，请输入站长口令。</p>
@@ -27,6 +27,7 @@
       </div>
 
       <div id="owner-editor" class="upload-box hidden">
+        <p><input id="github-token" type="password" placeholder="GitHub Token（需要 repo 权限）" /></p>
         <label for="upload-section">选择分区：</label>
         <select id="upload-section">
           <option value="about">简介</option>
@@ -54,6 +55,7 @@
           <button id="apply-update" type="button">更新内容</button>
           <button id="clear-section" type="button">清空当前分区</button>
         </p>
+        <div id="current-items" class="upload-box"></div>
         <p id="manage-msg" class="muted"></p>
         <textarea id="pending-preview" placeholder="这里会显示待更新条目预览" readonly></textarea>
       </div>

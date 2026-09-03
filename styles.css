@@ -224,6 +224,13 @@ button {
   margin: 8px 0;
 }
 
+#current-items .item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
 textarea {
   width: 100%;
   min-height: 180px;
